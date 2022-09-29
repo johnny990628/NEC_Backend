@@ -1,0 +1,35 @@
+{
+    "name": "ghl_backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "nodemon server.js",
+        "socket": "nodemon socket.js",
+        "swagger-autogen": "node ./swagger.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/johnny990628/GHL_backend.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/johnny990628/GHL_backend/issues"
+    },
+    "homepage": "https://github.com/johnny990628/GHL_backend#readme",
+    "dependencies": {
+        "bcrypt": "^5.0.1",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.0",
+        "express": "^4.17.3",
+        "jsonwebtoken": "^8.5.1",
+        "mongoose": "^6.2.10",
+        "nodemon": "^2.0.15",
+        "socket.io": "^4.4.1",
+        "swagger-autogen": "^2.21.1",
+        "swagger-ui-express": "^4.3.0"
+    }
+}
