@@ -22,8 +22,8 @@ app.use(cors({ credentials: true, origin: process.env.WEB_ORIGIN_URL }))
 app.use(cookieParser())
 app.use(express.static(path.resolve(__dirname, './public/build')))
 
-app.use('/ghl/auth', authRouter)
-app.use('/ghl/api', APIRouter)
+app.use('/nec/auth', authRouter)
+app.use('/nec/api', APIRouter)
 app.get('*', (req, res) => {
     res.sendFile(path.resolve(__dirname, './public/build', 'index.html'))
 })
