@@ -15,12 +15,7 @@ const cancerSchema = new Schema({
 
 const recordSchema = new Schema(
     {
-        liver: [cancerSchema],
-        gallbladder: [cancerSchema],
-        kidney: [cancerSchema],
-        pancreas: [cancerSchema],
-        spleen: [cancerSchema],
-        suggestion: [cancerSchema],
+        report: [cancerSchema],
         id: { type: String },
     },
     { _id: false }
