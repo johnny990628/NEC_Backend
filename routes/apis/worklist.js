@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const router = express.Router();
@@ -7,7 +8,6 @@ const { sendWorkItem } = require("../../dcm4chee/sendWorkItem");
 router.route("/:patientID").get(async (req, res) => {
   try {
     const { patientID } = req.params;
-    console.log(patientID);
     var patient = await PATIENT.findOne({ id: patientID });
     const headers = {
       Accept: "application/dicom+json",
@@ -15,11 +15,7 @@ router.route("/:patientID").get(async (req, res) => {
     };
     var dicomTagData = await sendWorkItem(patient);
 
-    axios.post(
-      "http://dcm4chee.luckypig.net:8080/dcm4chee-arc/aets/WORKLIST/rs/workitems",
-      dicomTagData,
-      { headers }
-    );
+    axios.post(process.env.WORKLIST_API_URL, dicomTagData, { headers });
 
     return res.status(200).json(patient);
   } catch (err) {
