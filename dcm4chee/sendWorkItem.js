@@ -1,5 +1,5 @@
 const sendWorkItem = async (patient) => {
-  var { id, gender } = patient;
+  var { id, gender, name } = patient;
 
   const birthisoDateStr = "2023-02-17T08:54:57.706Z";
   const birthdateObj = new Date(birthisoDateStr);
@@ -16,14 +16,20 @@ const sendWorkItem = async (patient) => {
   const nowminutes = String(now.getMinutes()).padStart(2, "0");
   const nowseconds = String(now.getSeconds()).padStart(2, "0");
   const formattedDate = `${nowyear}${nowmonth}${nowday}${nowhours}${nowminutes}${nowseconds}`;
+  const FirstName = name.lenght === 3 ? name.substr(0) : name.substr(0, 2);
+  const LastName = name.lenght === 3 ? name.substr(2) : name.substr(2, 4);
 
   var DicomTagData = [
     {
+      "00080005": {
+        vr: "CS",
+        Value: ["ISO_IR 192"],
+      },
       "00100010": {
         vr: "PN",
         Value: [
           {
-            Alphabetic: id,
+            Alphabetic: `${FirstName}^${LastName}`,
           },
         ],
       },
