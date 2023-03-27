@@ -24,24 +24,7 @@ router
                   }
                 : {}
 
-            let statusMatch = {}
-            if (status) {
-                switch (status) {
-                    case 'finish':
-                        statusMatch['schedule.0'] = { $exists: false }
-                        statusMatch['report.0'] = { $exists: true }
-                        break
-                    case 'yet':
-                        statusMatch['schedule.0'] = { $exists: false }
-                        statusMatch['report.0'] = { $exists: false }
-                        break
-                    case 'processing':
-                        statusMatch['schedule.0'] = { $exists: true }
-                        break
-                    default:
-                        break
-                }
-            }
+            let statusMatch = status === 'all' ? {} : { 'schedule.status': status }
 
             const patients = await PATIENT.aggregate([
                 { $match: searchQuery },
@@ -75,6 +58,21 @@ router
                 { $sort: { [sort]: Number(desc) } },
                 { $skip: Number(limit) * Number(offset) },
                 { $limit: Number(limit) },
+                {
+                    $addFields: {
+                        blood: { $arrayElemAt: ['$blood', 0] },
+                        schedule: { $arrayElemAt: ['$schedule', 0] },
+                        creator: { $arrayElemAt: ['$creator', 0] },
+                    },
+                },
+                {
+                    $project: {
+                        'creator.password': 0,
+                    },
+                },
+                {
+                    $match: statusMatch,
+                },
             ])
 
             const count = await PATIENT.find(searchQuery).countDocuments()
