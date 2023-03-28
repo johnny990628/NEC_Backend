@@ -1,8 +1,8 @@
 const sendWorkItem = async (patient) => {
-  var { id, gender } = patient;
+  var { id, gender, name, birth } = patient;
 
-  const birthisoDateStr = "2023-02-17T08:54:57.706Z";
-  const birthdateObj = new Date(birthisoDateStr);
+  //const birthisoDateStr = "2023-02-17T08:54:57.706Z";
+  const birthdateObj = new Date(birth);
   const birthyear = birthdateObj.getFullYear().toString();
   const birthmonth = (birthdateObj.getMonth() + 1).toString().padStart(2, "0");
   const birthdate = birthdateObj.getDate().toString().padStart(2, "0");
@@ -16,14 +16,20 @@ const sendWorkItem = async (patient) => {
   const nowminutes = String(now.getMinutes()).padStart(2, "0");
   const nowseconds = String(now.getSeconds()).padStart(2, "0");
   const formattedDate = `${nowyear}${nowmonth}${nowday}${nowhours}${nowminutes}${nowseconds}`;
+  const FirstName = name.lenght === 3 ? name.substr(0) : name.substr(0, 2);
+  const LastName = name.lenght === 3 ? name.substr(2) : name.substr(2, 4);
 
   var DicomTagData = [
     {
+      "00080005": {
+        vr: "CS",
+        Value: ["ISO_IR 192"],
+      },
       "00100010": {
         vr: "PN",
         Value: [
           {
-            Alphabetic: id,
+            Alphabetic: `${FirstName}^${LastName}`,
           },
         ],
       },
@@ -67,6 +73,124 @@ const sendWorkItem = async (patient) => {
         vr: "LO",
         Value: ["Scheduled procedure step description"],
       },
+      "00400100": {
+        "vr": "SQ",
+        "Value": [
+          {
+            "00080000": {
+              "vr": "UL",
+              "Value": [
+                12
+              ]
+            },
+            "00080060": {
+              "vr": "CS",
+              "Value": [
+                "EKG"
+              ]
+            },
+            "00180000": {
+              "vr": "UL",
+              "Value": [
+                8
+              ]
+            },
+            "00180015": {
+              "vr": "CS"
+            },
+            "00400000": {
+              "vr": "UL",
+              "Value": [
+                114
+              ]
+            },
+            "00400001": {
+              "vr": "AE",
+              "Value": [
+                "EKGROOM"
+              ]
+            },
+            "00400002": {
+              "vr": "DA",
+              "Value": [
+                "20220810"
+              ]
+            },
+            "00400003": {
+              "vr": "TM",
+              "Value": [
+                "104116"
+              ]
+            },
+            "00400006": {
+              "vr": "PN"
+            },
+            "00400007": {
+              "vr": "LO",
+              "Value": [
+                "心電圖檢查\u0000"
+              ]
+            },
+            "00400009": {
+              "vr": "SH",
+              "Value": [
+                "3837150908"
+              ]
+            },
+            "00400020": {
+              "vr": "CS",
+              "Value": [
+                "SCHEDULED\u0000"
+              ]
+            },
+            "40080000": {
+              "vr": "UL",
+              "Value": [
+                8
+              ]
+            },
+            "40080040": {
+              "vr": "SH"
+            }
+          }
+        ]
+      },
+      "00401001": {
+        "vr": "SH",
+        "Value": [
+          "3837150908"
+        ]
+      },
+      "00401400": {
+        "vr": "LT"
+      },
+      "00402004": {
+        "vr": "DA",
+        "Value": [
+          "20220810"
+        ]
+      },
+      "00402005": {
+        "vr": "TM",
+        "Value": [
+          "104116"
+        ]
+      },
+      "00402016": {
+        "vr": "LO",
+        "Value": [
+          "3837150908"
+        ]
+      },
+      "00402017": {
+        "vr": "LO",
+        "Value": [
+          "3837150908"
+        ]
+      },
+      "00402400": {
+        "vr": "LT"
+      }
     },
   ];
   return DicomTagData;
