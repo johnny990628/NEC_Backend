@@ -44,14 +44,7 @@ router
                         as: 'report',
                     },
                 },
-                {
-                    $lookup: {
-                        from: 'bloods',
-                        localField: 'id',
-                        foreignField: 'patientID',
-                        as: 'blood',
-                    },
-                },
+
                 {
                     $match: statusMatch,
                 },
@@ -60,8 +53,7 @@ router
                 { $limit: Number(limit) },
                 {
                     $addFields: {
-                        blood: { $arrayElemAt: ['$blood', 0] },
-                        schedule: { $arrayElemAt: ['$schedule', 0] },
+                        schedule: '$schedule',
                         creator: { $arrayElemAt: ['$creator', 0] },
                     },
                 },
@@ -108,7 +100,7 @@ router
             const patient = await PATIENT.findOneAndDelete({ id: patientID })
             await REPORT.findOneAndDelete({ patientID, status: 'pending' })
             await SCHEDULE.findOneAndDelete({ patientID })
-            await BLOOD.findOneAndDelete({ patientID })
+            // await BLOOD.findOneAndDelete({ patientID })
             return res.status(200).json(patient)
         } catch (err) {
             console.log(err)
@@ -125,7 +117,7 @@ router
         */
         try {
             const { patientID } = req.params
-            const patient = await PATIENT.findOne({ id: patientID }).populate('blood')
+            const patient = await PATIENT.findOne({ id: patientID })
             return res.status(200).json(patient)
         } catch (e) {
             return res.status(500).json({ message: e.message })

@@ -24,10 +24,10 @@ const recordSchema = new Schema(
 const reportSchema = new Schema(
     {
         patientID: { type: String, required: true },
-        procedureCode: { type: String, required: true },
+        // procedureCode: { type: String, required: true },
         records: [recordSchema],
-        status: { type: String, required: true },
-        blood: { type: String },
+        // status: { type: String, required: true },
+        // blood: { type: String },
         userID: { type: String },
     },
     { timestamps: true }
