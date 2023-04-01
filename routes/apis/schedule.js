@@ -13,13 +13,14 @@ router
             #swagger.description = '取得排程' 
         */
         try {
-            const { procedureCode, patientID } = req.query
+            const { procedureCode, patientID, status } = req.query
 
             let query = {}
             if (procedureCode) query.procedureCode = procedureCode
             if (patientID) query.patientID = patientID
+            if (status) query.status = status
 
-            const schedule = await SCHEDULE.find(query).populate('patient').populate('reports').populate('blood')
+            const schedule = await SCHEDULE.find(query).populate('patient').populate('reports')
             const count = await SCHEDULE.find(query).countDocuments()
 
             return res.status(200).json({ results: schedule, count })

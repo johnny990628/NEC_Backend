@@ -9,7 +9,7 @@ router.route('/').get(async (req, res) => {
     try {
         const patient = await PATIENT.countDocuments()
         const report = await REPORT.countDocuments()
-        const schedule = await SCHEDULE.countDocuments()
+        const schedule = await SCHEDULE.countDocuments({ status: 'wait-examination' })
         return res.status(200).json({ patient, report, schedule })
     } catch (e) {
         return res.status(500).json({ message: e.message })

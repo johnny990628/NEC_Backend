@@ -81,6 +81,11 @@ router
                         user: { $arrayElemAt: ['$user', 0] },
                     },
                 },
+                {
+                    $project: {
+                        'user.password': 0,
+                    },
+                },
             ])
 
             const count = await REPORT.find(searchQuery).countDocuments()
