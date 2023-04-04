@@ -18,10 +18,11 @@ scheduleSchema.virtual('patient', {
     justOne: true,
 })
 
-scheduleSchema.virtual('reports', {
+scheduleSchema.virtual('report', {
     ref: 'Report',
     localField: 'patientID',
     foreignField: 'patientID',
+    justOne: true,
 })
 scheduleSchema.virtual('blood', {
     ref: 'Blood',

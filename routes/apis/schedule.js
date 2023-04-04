@@ -20,7 +20,7 @@ router
             if (patientID) query.patientID = patientID
             if (status) query.status = status
 
-            const schedule = await SCHEDULE.find(query).populate('patient').populate('reports')
+            const schedule = await SCHEDULE.find(query).populate('patient').populate('report')
             const count = await SCHEDULE.find(query).countDocuments()
 
             return res.status(200).json({ results: schedule, count })

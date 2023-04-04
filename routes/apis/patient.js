@@ -44,7 +44,6 @@ router
                         as: 'report',
                     },
                 },
-
                 {
                     $match: statusMatch,
                 },

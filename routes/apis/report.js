@@ -119,6 +119,7 @@ router
         try {
             const { reportID } = req.params
             const report = await REPORT.findOne({ _id: reportID }).populate('patient').populate('user')
+            // report.user.password = ''
             return res.status(200).json(report)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -133,7 +134,7 @@ router
             const { reportID } = req.params
             const report = await REPORT.findOneAndUpdate(
                 { _id: reportID },
-                { $push: { records: req.body.report }, $set: { status: req.body.status, userID: req.body.userID } },
+                { $push: { records: req.body.report } },
                 { returnDocument: 'after' }
             )
             return res.status(200).json(report)
