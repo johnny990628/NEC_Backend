@@ -2,20 +2,27 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const cancerSchema = new Schema({
-    name: {
+    id: {
         type: String,
         required: true,
     },
-    type: {
-        type: String,
+    x: {
+        type: Number,
         required: true,
     },
-    value: Schema.Types.Mixed,
+    y: {
+        type: Number,
+        required: true,
+    },
+    size: {
+        type: Number,
+        required: true,
+    },
 })
 
 const recordSchema = new Schema(
     {
-        report: [cancerSchema],
+        report: { L: [cancerSchema], R: [cancerSchema] },
         id: { type: String },
     },
     { _id: false }
@@ -24,10 +31,10 @@ const recordSchema = new Schema(
 const reportSchema = new Schema(
     {
         patientID: { type: String, required: true },
-        procedureCode: { type: String, required: true },
+        // procedureCode: { type: String, required: true },
         records: [recordSchema],
-        status: { type: String, required: true },
-        blood: { type: String },
+        // status: { type: String, required: true },
+        // blood: { type: String },
         userID: { type: String },
     },
     { timestamps: true }

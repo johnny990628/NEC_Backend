@@ -18,20 +18,80 @@ router
             const searchRe = new RegExp(search)
             const searchQuery = search
                 ? {
-                      $or: [{ patientID: searchRe }, { blood: searchRe }, { procedureCode: searchRe }],
+                      $or: [{ patientID: searchRe }],
                   }
                 : {}
 
-            const reports = await REPORT.find(searchQuery)
-                .limit(limit)
-                .sort({ [sort]: desc })
-                .skip(limit * offset)
-                .populate('patient')
-                .populate('user')
+            const reports = await REPORT.aggregate([
+                { $match: searchQuery },
+                {
+                    $lookup: {
+                        from: 'patients',
+                        localField: 'patientID',
+                        foreignField: 'id',
+                        as: 'patient',
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        let: { pid: '$userID' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $eq: ['$_id', { $toObjectId: '$$pid' }],
+                                    },
+                                },
+                            },
+                        ],
+                        as: 'user',
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'schedules',
+                        let: {
+                            customerId: '$_id',
+                        },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $eq: [
+                                            {
+                                                $toObjectId: '$reportID',
+                                            },
+                                            '$$customerId',
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                        as: 'schedule',
+                    },
+                },
+                { $sort: { [sort]: Number(desc) } },
+                { $skip: Number(limit) * Number(offset) },
+                { $limit: Number(limit) },
+                {
+                    $addFields: {
+                        schedule: { $arrayElemAt: ['$schedule', 0] },
+                        patient: { $arrayElemAt: ['$patient', 0] },
+                        user: { $arrayElemAt: ['$user', 0] },
+                    },
+                },
+                {
+                    $project: {
+                        'user.password': 0,
+                    },
+                },
+            ])
 
             const count = await REPORT.find(searchQuery).countDocuments()
             return res.status(200).json({ count, results: reports })
         } catch (e) {
+            console.log(e)
             return res.status(500).json({ message: e.message })
         }
     })
@@ -41,7 +101,7 @@ router
             #swagger.description = '加入排程' 
         */
         try {
-            let report = new REPORT({ ...req.body, status: 'pending' })
+            let report = new REPORT({ ...req.body })
             report = await report.save()
             return res.status(200).json(report)
         } catch (e) {
@@ -59,6 +119,7 @@ router
         try {
             const { reportID } = req.params
             const report = await REPORT.findOne({ _id: reportID }).populate('patient').populate('user')
+            // report.user.password = ''
             return res.status(200).json(report)
         } catch (e) {
             return res.status(500).json({ message: e.message })
@@ -73,7 +134,7 @@ router
             const { reportID } = req.params
             const report = await REPORT.findOneAndUpdate(
                 { _id: reportID },
-                { $push: { records: req.body.report }, $set: { status: req.body.status, userID: req.body.userID } },
+                { $push: { records: req.body.report } },
                 { returnDocument: 'after' }
             )
             return res.status(200).json(report)

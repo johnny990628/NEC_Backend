@@ -24,24 +24,7 @@ router
                   }
                 : {}
 
-            let statusMatch = {}
-            if (status) {
-                switch (status) {
-                    case 'finish':
-                        statusMatch['schedule.0'] = { $exists: false }
-                        statusMatch['report.0'] = { $exists: true }
-                        break
-                    case 'yet':
-                        statusMatch['schedule.0'] = { $exists: false }
-                        statusMatch['report.0'] = { $exists: false }
-                        break
-                    case 'processing':
-                        statusMatch['schedule.0'] = { $exists: true }
-                        break
-                    default:
-                        break
-                }
-            }
+            let statusMatch = status === 'all' ? {} : { 'schedule.status': status }
 
             const patients = await PATIENT.aggregate([
                 { $match: searchQuery },
@@ -62,19 +45,25 @@ router
                     },
                 },
                 {
-                    $lookup: {
-                        from: 'bloods',
-                        localField: 'id',
-                        foreignField: 'patientID',
-                        as: 'blood',
-                    },
-                },
-                {
                     $match: statusMatch,
                 },
                 { $sort: { [sort]: Number(desc) } },
                 { $skip: Number(limit) * Number(offset) },
                 { $limit: Number(limit) },
+                {
+                    $addFields: {
+                        schedule: '$schedule',
+                        creator: { $arrayElemAt: ['$creator', 0] },
+                    },
+                },
+                {
+                    $project: {
+                        'creator.password': 0,
+                    },
+                },
+                {
+                    $match: statusMatch,
+                },
             ])
 
             const count = await PATIENT.find(searchQuery).countDocuments()
@@ -110,7 +99,7 @@ router
             const patient = await PATIENT.findOneAndDelete({ id: patientID })
             await REPORT.findOneAndDelete({ patientID, status: 'pending' })
             await SCHEDULE.findOneAndDelete({ patientID })
-            await BLOOD.findOneAndDelete({ patientID })
+            // await BLOOD.findOneAndDelete({ patientID })
             return res.status(200).json(patient)
         } catch (err) {
             console.log(err)
@@ -127,7 +116,7 @@ router
         */
         try {
             const { patientID } = req.params
-            const patient = await PATIENT.findOne({ id: patientID }).populate('blood')
+            const patient = await PATIENT.findOne({ id: patientID })
             return res.status(200).json(patient)
         } catch (e) {
             return res.status(500).json({ message: e.message })
