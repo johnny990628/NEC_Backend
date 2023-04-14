@@ -1,24 +1,27 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const cancerSchema = new Schema({
-    id: {
-        type: String,
-        required: true,
+const cancerSchema = new Schema(
+    {
+        id: {
+            type: String,
+            required: true,
+        },
+        clock: {
+            type: Number,
+            required: true,
+        },
+        distance: {
+            type: Number,
+            required: true,
+        },
+        size: {
+            type: Number,
+            required: true,
+        },
     },
-    x: {
-        type: Number,
-        required: true,
-    },
-    y: {
-        type: Number,
-        required: true,
-    },
-    size: {
-        type: Number,
-        required: true,
-    },
-})
+    { _id: false }
+)
 
 const recordSchema = new Schema(
     {
