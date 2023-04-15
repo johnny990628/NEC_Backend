@@ -26,6 +26,7 @@ const cancerSchema = new Schema(
 const recordSchema = new Schema(
     {
         report: { L: [cancerSchema], R: [cancerSchema] },
+        birads: { type: Number },
         id: { type: String },
     },
     { _id: false }
