@@ -13,15 +13,62 @@ router
             #swagger.description = '取得排程' 
         */
         try {
-            const { procedureCode, patientID, status } = req.query
+            const { search, dateFrom, dateTo } = req.query
 
-            let query = {}
-            if (procedureCode) query.procedureCode = procedureCode
-            if (patientID) query.patientID = patientID
-            if (status) query.status = status
+            const searchRe = new RegExp(search)
+            const searchQuery = search
+                ? {
+                      $or: [{ procedureCode: searchRe }, { patientID: searchRe }],
+                  }
+                : {}
 
-            const schedule = await SCHEDULE.find(query).populate('patient').populate('report')
-            const count = await SCHEDULE.find(query).countDocuments()
+            const dateConditions =
+                dateFrom && dateTo
+                    ? {
+                          createdAt: {
+                              $gte: new Date(dateFrom),
+                              $lte: new Date(dateTo),
+                          },
+                      }
+                    : {}
+
+            const schedule = await SCHEDULE.aggregate([
+                { $match: dateConditions },
+                { $match: searchQuery },
+                {
+                    $lookup: {
+                        from: 'patients',
+                        localField: 'patientID',
+                        foreignField: 'id',
+                        as: 'patient',
+                    },
+                },
+                {
+                    $lookup: {
+                        from: 'reports',
+                        let: { pid: '$reportID' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $eq: ['$_id', { $toObjectId: '$$pid' }],
+                                    },
+                                },
+                            },
+                        ],
+                        as: 'report',
+                    },
+                },
+                {
+                    $addFields: {
+                        patient: { $arrayElemAt: ['$patient', 0] },
+                        report: { $arrayElemAt: ['$report', 0] },
+                    },
+                },
+            ])
+
+            // const schedule = await SCHEDULE.find(query).populate('patient').populate('report')
+            const count = await SCHEDULE.find(searchQuery).countDocuments()
 
             return res.status(200).json({ results: schedule, count })
         } catch (e) {
