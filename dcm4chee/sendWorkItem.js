@@ -128,7 +128,7 @@ const sendWorkItem = async (patient) => {
             "00400007": {
               "vr": "LO",
               "Value": [
-                "心電圖檢查\u0000"
+                "乳房超音波"
               ]
             },
             "00400009": {
@@ -140,7 +140,7 @@ const sendWorkItem = async (patient) => {
             "00400020": {
               "vr": "CS",
               "Value": [
-                "SCHEDULED\u0000"
+                "SCHEDULED"
               ]
             },
             "40080000": {
