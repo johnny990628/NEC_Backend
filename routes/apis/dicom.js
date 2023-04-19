@@ -25,7 +25,22 @@ router.route('/').get(async (req, res) => {
             return { ...patient, ...study }
         })
 
-        return res.status(200).json({ results: result, count: count.length })
+        const asyncRes = await Promise.all(
+            result.map(async i => {
+                let instances = await axios.get(process.env.PACS_URL + `/${i.StudyInstanceUID}/instances`)
+                // instances = instances[0]
+                return instances
+
+                // const SeriesInstanceUID = instances['0020000E']['Value'][0]
+                // const SOPInstanceUID = instances['00080018']['Value'][0]
+                // return {
+                //     ...i,
+                //     imageURL: `${process.env.PACS_URL}?requestType=WADO&studyUID=${i.StudyInstanceUID}&seriesUID=${SeriesInstanceUID}&objectUID=${SOPInstanceUID}&contentType=image/jpeg`,
+                // }
+            })
+        )
+
+        return res.status(200).json({ results: asyncRes, count: count.length })
     } catch (e) {
         return res.status(500).json({ message: e.message })
     }
