@@ -35,6 +35,7 @@ const recordSchema = new Schema(
 const reportSchema = new Schema(
     {
         patientID: { type: String, required: true },
+        StudyInstanceUID: { type: String, required: true },
         // procedureCode: { type: String, required: true },
         records: [recordSchema],
         // status: { type: String, required: true },
