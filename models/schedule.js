@@ -25,7 +25,7 @@ const scheduleSchema = new Schema(
   {
     patientID: { type: String, required: true },
     reportID: { type: String },
-    nhiCard: { nhiCardSchema },
+    nhiCard:  nhiCardSchema ,
     procedureCode: { type: String, required: false },
     status: { type: String, required: true },
   },
