@@ -33,7 +33,7 @@ router.route('/login').post(async (req, res) => {
         if (!user) return res.status(401).json({ message: '查無使用者' })
 
         if (await bcrypt.compare(password, user.password)) {
-            if (user.role === 0) return res.status(403).json({ message: '使用者權限不足，等待管理員審核' })
+            if (user.role === 0) return res.status(401).json({ message: '使用者權限不足，等待管理員審核' })
             const accessToken = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRECT_KEY, {
                 expiresIn: 6000000,
             })
