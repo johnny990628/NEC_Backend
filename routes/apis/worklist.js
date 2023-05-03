@@ -16,8 +16,7 @@ router.route("/:patientID").get(async (req, res) => {
     var dicomTagData = await sendWorkItem(patient);
     await POST_DCM4CHEE_workitems(dicomTagData);
     const mwlitems = await POST_DCM4CHEE_mwlitems(dicomTagData);
-    
-    return res.status(200).json(mwlitems.data["0020000D"].Value);
+    return res.status(200).json(mwlitems.data["00080050"].Value);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
