@@ -16,8 +16,6 @@ const sendWorkItem = async (patient) => {
   const nowminutes = String(now.getMinutes()).padStart(2, "0");
   const nowseconds = String(now.getSeconds()).padStart(2, "0");
   const formattedDate = `${nowyear}${nowmonth}${nowday}${nowhours}${nowminutes}${nowseconds}`;
-  const FirstName = name.lenght === 3 ? name.substr(0) : name.substr(0, 2);
-  const LastName = name.lenght === 3 ? name.substr(2) : name.substr(2, 4);
 
   var DicomTagData = [
     {
@@ -29,7 +27,7 @@ const sendWorkItem = async (patient) => {
         vr: "PN",
         Value: [
           {
-            Alphabetic: `${FirstName}^${LastName}`,
+            Alphabetic: name,
           },
         ],
       },
@@ -74,123 +72,91 @@ const sendWorkItem = async (patient) => {
         Value: ["Scheduled procedure step description"],
       },
       "00400100": {
-        "vr": "SQ",
-        "Value": [
+        vr: "SQ",
+        Value: [
           {
             "00080000": {
-              "vr": "UL",
-              "Value": [
-                12
-              ]
+              vr: "UL",
+              Value: [12],
             },
             "00080060": {
-              "vr": "CS",
-              "Value": [
-                "EKG"
-              ]
+              vr: "CS",
+              Value: ["US"],
             },
             "00180000": {
-              "vr": "UL",
-              "Value": [
-                8
-              ]
+              vr: "UL",
+              Value: [8],
             },
             "00180015": {
-              "vr": "CS"
+              vr: "CS",
             },
             "00400000": {
-              "vr": "UL",
-              "Value": [
-                114
-              ]
+              vr: "UL",
+              Value: [114],
             },
             "00400001": {
-              "vr": "AE",
-              "Value": [
-                "EKGROOM"
-              ]
+              vr: "AE",
+              Value: ["EKGROOM"],
             },
             "00400002": {
-              "vr": "DA",
-              "Value": [
-                "20220810"
-              ]
+              vr: "DA",
+              Value: [formattedDate.slice(0, 8)],
             },
             "00400003": {
-              "vr": "TM",
-              "Value": [
-                "104116"
-              ]
+              vr: "TM",
+              Value: ["104116"],
             },
             "00400006": {
-              "vr": "PN"
+              vr: "PN",
             },
             "00400007": {
-              "vr": "LO",
-              "Value": [
-                "乳房超音波"
-              ]
+              vr: "LO",
+              Value: ["乳房超音波"],
             },
             "00400009": {
-              "vr": "SH",
-              "Value": [
-                "3837150908"
-              ]
+              vr: "SH",
+              Value: ["3837150908"],
             },
             "00400020": {
-              "vr": "CS",
-              "Value": [
-                "SCHEDULED"
-              ]
+              vr: "CS",
+              Value: ["SCHEDULED"],
             },
-            "40080000": {
-              "vr": "UL",
-              "Value": [
-                8
-              ]
+            40080000: {
+              vr: "UL",
+              Value: [8],
             },
-            "40080040": {
-              "vr": "SH"
-            }
-          }
-        ]
+            40080040: {
+              vr: "SH",
+            },
+          },
+        ],
       },
       "00401001": {
-        "vr": "SH",
-        "Value": [
-          "3837150908"
-        ]
+        vr: "SH",
+        Value: ["3837150908"],
       },
       "00401400": {
-        "vr": "LT"
+        vr: "LT",
       },
       "00402004": {
-        "vr": "DA",
-        "Value": [
-          "20220810"
-        ]
+        vr: "DA",
+        Value: [formattedDate.slice(0, 8)],
       },
       "00402005": {
-        "vr": "TM",
-        "Value": [
-          "104116"
-        ]
+        vr: "TM",
+        Value: ["104116"],
       },
       "00402016": {
-        "vr": "LO",
-        "Value": [
-          "3837150908"
-        ]
+        vr: "LO",
+        Value: ["3837150908"],
       },
       "00402017": {
-        "vr": "LO",
-        "Value": [
-          "3837150908"
-        ]
+        vr: "LO",
+        Value: ["3837150908"],
       },
       "00402400": {
-        "vr": "LT"
-      }
+        vr: "LT",
+      },
     },
   ];
   return DicomTagData;
