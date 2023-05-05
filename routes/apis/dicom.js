@@ -63,21 +63,11 @@ router.route("/").get(async (req, res) => {
 });
 
 router.route("/downloadDCM/:studyUID").get(async (req, res) => {
-  const { studyUID } = req.params;
   try {
+    const { studyUID } = req.params;
     const params = `/${studyUID}?accept=application/zip&dicomdir=true`;
     const response = await GET_DCM4CHEE_downloadDCM(params);
-    const writeStream = fs.createWriteStream(`tempDCM/${studyUID}.rar`);
-    const responsepipe = await response.data.pipe(writeStream);
-    responsepipe.on("finish", () => {
-      const filePaths = path.join(
-        __dirname,
-        "../../",
-        "tempDCM",
-        `${studyUID}.rar`
-      );
-      return res.status(200).download(filePaths, `${studyUID}.rar`);
-    });
+    response.data.pipe(res);
   } catch (e) {
     return res.status(500).json({ message: e.message });
   }
