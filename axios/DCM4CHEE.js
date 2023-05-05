@@ -7,6 +7,9 @@ const POST_DCM4CHEE_workitems = (dicomTagData) =>
 const POST_DCM4CHEE_mwlitems = (dicomTagData) =>
   instance.post("mwlitems", dicomTagData);
 
+const GET_DCM4CHEE_downloadDCM = (params) =>
+  instance.get(process.env.PACS_URL + params, { responseType: "stream" });
+
 // const POST_DCM4CHEE_workitems = async (dicomTagData) => {
 //   const headers = {
 //     Accept: "application/dicom+json",
@@ -31,4 +34,8 @@ const POST_DCM4CHEE_mwlitems = (dicomTagData) =>
 //   );
 // };
 
-module.exports = { POST_DCM4CHEE_workitems, POST_DCM4CHEE_mwlitems };
+module.exports = {
+  POST_DCM4CHEE_workitems,
+  POST_DCM4CHEE_mwlitems,
+  GET_DCM4CHEE_downloadDCM,
+};

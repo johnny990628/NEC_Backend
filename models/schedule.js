@@ -27,6 +27,7 @@ const scheduleSchema = new Schema(
     reportID: { type: String },
     nhiCard: nhiCardSchema,
     StudyInstanceUID: { type: String, required: false },
+    accessionNumber: { type: String, required: false },
     procedureCode: { type: String, required: false },
     status: { type: String, required: true },
   },
