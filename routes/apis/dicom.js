@@ -76,7 +76,7 @@ router.route("/downloadDCM/:studyUID").get(async (req, res) => {
         "tempDCM",
         `${studyUID}.rar`
       );
-      return res.status(200).download(filePaths, "download.rar");
+      return res.status(200).download(filePaths, `${studyUID}.rar`);
     });
   } catch (e) {
     return res.status(500).json({ message: e.message });
