@@ -21,12 +21,12 @@ router.route('/').get(async (req, res) => {
         const queryParams = parseQueryParams(req)
         let { limit, offset, sort, desc } = queryParams
         offset = offset * limit
+
         delete queryParams.desc
         delete queryParams.status
         delete queryParams.sort
 
-        queryParams.PatientName = decodeURIComponent(queryParams.PatientName)
-
+        queryParams.PatientName = decodeURIComponent(queryParams.PatientName || '')
         const { data } = await axios.get(process.env.PACS_URL, {
             params: queryParams,
         })
