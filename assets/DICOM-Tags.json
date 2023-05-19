@@ -52,5 +52,11 @@
             "tag": "0020000E",
             "keyword": "SeriesInstanceUID"
         }
+    ],
+    "instances": [
+        {
+            "tag": "00200013",
+            "keyword": "InstanceNumber"
+        }
     ]
 }

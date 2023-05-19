@@ -33,16 +33,6 @@ router.route('/').get(async (req, res) => {
 
         const { data: count } = await axios.get(process.env.PACS_URL)
 
-        const asyncGetSeries = async (studyUID) => {
-            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series`)
-            return data
-        }
-
-        const asyncGetInstances = async (studyUID, seriesUID) => {
-            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series/${seriesUID}/instances`)
-            return data
-        }
-
         const reduceData = ({ header, d }) => {
             const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
                 return {
@@ -51,6 +41,16 @@ router.route('/').get(async (req, res) => {
                 }
             }, {})
             return afterFormSeries
+        }
+
+        const asyncGetSeries = async (studyUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series`)
+            return data
+        }
+
+        const asyncGetInstances = async (studyUID, seriesUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series/${seriesUID}/instances`)
+            return data
         }
 
         const result = data.map((d) => {
@@ -67,11 +67,21 @@ router.route('/').get(async (req, res) => {
                 const SeriesInstanceUID = instances['0020000E']['Value'][0]
                 const SOPInstanceUID = instances['00080018']['Value'][0]
 
-                //search for series of study
-                const beforeFormSeries = await asyncGetSeries(i.StudyInstanceUID)
-                const series = beforeFormSeries.map((d) => {
-                    return reduceData({ header: 'series', d })
-                })
+                // search for series of study
+                const originalSeries = await asyncGetSeries(i.StudyInstanceUID)
+                const series = await Promise.all(
+                    originalSeries
+                        .map((s) => {
+                            return reduceData({ header: 'series', d: s })
+                        })
+                        .map(async (s) => {
+                            const originalInstances = await asyncGetInstances(i.StudyInstanceUID, s.SeriesInstanceUID)
+                            return {
+                                ...s,
+                                instances: originalInstances.map((i) => reduceData({ header: 'instances', d: i })),
+                            }
+                        })
+                )
 
                 return {
                     ...i,
