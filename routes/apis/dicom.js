@@ -33,19 +33,29 @@ router.route('/').get(async (req, res) => {
 
         const { data: count } = await axios.get(process.env.PACS_URL)
 
+        const asyncGetSeries = async (studyUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series`)
+            return data
+        }
+
+        const asyncGetInstances = async (studyUID, seriesUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series/${seriesUID}/instances`)
+            return data
+        }
+
+        const reduceData = ({ header, d }) => {
+            const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
+                return {
+                    ...accumulator,
+                    [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
+                }
+            }, {})
+            return afterFormSeries
+        }
+
         const result = data.map((d) => {
-            const patient = dicomTag.patient.reduce((accumulator, currentValue) => {
-                return {
-                    ...accumulator,
-                    [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
-                }
-            }, {})
-            const study = dicomTag.study.reduce((accumulator, currentValue) => {
-                return {
-                    ...accumulator,
-                    [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
-                }
-            }, {})
+            const patient = reduceData({ header: 'patient', d })
+            const study = reduceData({ header: 'study', d })
             return { ...patient, ...study }
         })
 
@@ -56,8 +66,16 @@ router.route('/').get(async (req, res) => {
 
                 const SeriesInstanceUID = instances['0020000E']['Value'][0]
                 const SOPInstanceUID = instances['00080018']['Value'][0]
+
+                //search for series of study
+                const beforeFormSeries = await asyncGetSeries(i.StudyInstanceUID)
+                const series = beforeFormSeries.map((d) => {
+                    return reduceData({ header: 'series', d })
+                })
+
                 return {
                     ...i,
+                    series,
                     imageURL: `${process.env.DICOM_JPEG_URL}?requestType=WADO&studyUID=${i.StudyInstanceUID}&seriesUID=${SeriesInstanceUID}&objectUID=${SOPInstanceUID}&contentType=image/jpeg`,
                 }
             })
