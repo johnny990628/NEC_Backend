@@ -34,5 +34,29 @@
             "tag": "0020000D",
             "keyword": "StudyInstanceUID"
         }
+    ],
+    "series": [
+        {
+            "tag": "00200011",
+            "keyword": "Number"
+        },
+        {
+            "tag": "0008103E",
+            "keyword": "SeriesDescription"
+        },
+        {
+            "tag": "00080060",
+            "keyword": "Modality"
+        },
+        {
+            "tag": "0020000E",
+            "keyword": "SeriesInstanceUID"
+        }
+    ],
+    "instances": [
+        {
+            "tag": "00200013",
+            "keyword": "InstanceNumber"
+        }
     ]
 }

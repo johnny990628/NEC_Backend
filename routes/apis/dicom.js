@@ -1,91 +1,126 @@
-const express = require("express");
-const router = express.Router();
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
-const dicomTag = require("../../assets/DICOM-Tags.json");
-const { GET_DCM4CHEE_downloadDCM } = require("../../axios/DCM4CHEE");
+const express = require('express')
+const router = express.Router()
+const fs = require('fs')
+const path = require('path')
+const axios = require('axios')
+const url = require('url')
+const dicomTag = require('../../assets/DICOM-Tags.json')
+const { GET_DCM4CHEE_downloadDCM } = require('../../axios/DCM4CHEE')
 
-router.route("/").get(async (req, res) => {
-  /* 	
+function parseQueryParams(req) {
+    const queryObject = url.parse(req.url, true).query
+    return queryObject
+}
+
+router.route('/').get(async (req, res) => {
+    /* 	
             #swagger.tags = ['Dicom']
             #swagger.description = '取得DICOM JSON Data' 
         */
-  try {
-    let { search, limit, offset, sort, desc } = req.query;
-    offset = offset * limit;
+    try {
+        const queryParams = parseQueryParams(req)
+        let { limit, offset, sort, desc } = queryParams
+        offset = offset * limit
 
-    const { data } = await axios.get(process.env.PACS_URL, {
-      params: { limit, offset, PatientID: search },
-    });
-    const { data: count } = await axios.get(process.env.PACS_URL);
+        delete queryParams.desc
+        delete queryParams.status
+        delete queryParams.sort
 
-    const result = data.map((d) => {
-      const patient = dicomTag.patient.reduce((accumulator, currentValue) => {
-        return {
-          ...accumulator,
-          [currentValue.keyword]:
-            (d[currentValue.tag]["Value"] && d[currentValue.tag]["Value"][0]) ||
-            null,
-        };
-      }, {});
-      const study = dicomTag.study.reduce((accumulator, currentValue) => {
-        return {
-          ...accumulator,
-          [currentValue.keyword]:
-            (d[currentValue.tag]["Value"] && d[currentValue.tag]["Value"][0]) ||
-            null,
-        };
-      }, {});
-      return { ...patient, ...study };
-    });
+        queryParams.PatientName = decodeURIComponent(queryParams.PatientName || '')
+        const { data } = await axios.get(process.env.PACS_URL, {
+            params: queryParams,
+        })
 
-    const asyncRes = await Promise.all(
-      result.map(async (i) => {
-        const { data } = await axios.get(
-          process.env.PACS_URL + `/${i.StudyInstanceUID}/instances`
-        );
-        const instances = data[0];
+        const { data: count } = await axios.get(process.env.PACS_URL)
 
-        const SeriesInstanceUID = instances["0020000E"]["Value"][0];
-        const SOPInstanceUID = instances["00080018"]["Value"][0];
-        return {
-          ...i,
-          imageURL: `${process.env.DICOM_JPEG_URL}?requestType=WADO&studyUID=${i.StudyInstanceUID}&seriesUID=${SeriesInstanceUID}&objectUID=${SOPInstanceUID}&contentType=image/jpeg`,
-        };
-      })
-    );
+        const reduceData = ({ header, d }) => {
+            const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
+                return {
+                    ...accumulator,
+                    [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
+                }
+            }, {})
+            return afterFormSeries
+        }
 
-    return res.status(200).json({ results: asyncRes, count: count.length });
-  } catch (e) {
-    return res.status(500).json({ message: e.message });
-  }
-});
+        const asyncGetSeries = async (studyUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series`)
+            return data
+        }
 
-router.route("/downloadDCM/:studyUID").get(async (req, res) => {
-  try {
-    const { studyUID } = req.params;
-    const params = `/${studyUID}?accept=application/zip&dicomdir=true`;
-    const response = await GET_DCM4CHEE_downloadDCM(params);
-    response.data.pipe(res);
-  } catch (e) {
-    return res.status(500).json({ message: e.message });
-  }
-});
+        const asyncGetInstances = async (studyUID, seriesUID) => {
+            const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series/${seriesUID}/instances`)
+            return data
+        }
 
-router.route("/:id").get(async (req, res) => {
-  /* 	
+        const result = data.map((d) => {
+            const patient = reduceData({ header: 'patient', d })
+            const study = reduceData({ header: 'study', d })
+            return { ...patient, ...study }
+        })
+
+        const asyncRes = await Promise.all(
+            result.map(async (i) => {
+                const { data } = await axios.get(process.env.PACS_URL + `/${i.StudyInstanceUID}/instances`)
+                const instances = data[0]
+
+                const SeriesInstanceUID = instances['0020000E']['Value'][0]
+                const SOPInstanceUID = instances['00080018']['Value'][0]
+
+                // search for series of study
+                const originalSeries = await asyncGetSeries(i.StudyInstanceUID)
+                const series = await Promise.all(
+                    originalSeries
+                        .map((s) => {
+                            return reduceData({ header: 'series', d: s })
+                        })
+                        .map(async (s) => {
+                            const originalInstances = await asyncGetInstances(i.StudyInstanceUID, s.SeriesInstanceUID)
+                            return {
+                                ...s,
+                                instances: originalInstances.map((i) => reduceData({ header: 'instances', d: i })),
+                            }
+                        })
+                )
+
+                return {
+                    ...i,
+                    series,
+                    imageURL: `${process.env.DICOM_JPEG_URL}?requestType=WADO&studyUID=${i.StudyInstanceUID}&seriesUID=${SeriesInstanceUID}&objectUID=${SOPInstanceUID}&contentType=image/jpeg`,
+                }
+            })
+        )
+
+        return res.status(200).json({ results: asyncRes, count: count.length })
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
+})
+
+router.route('/downloadDCM/:studyUID').get(async (req, res) => {
+    try {
+        const { studyUID } = req.params
+        const params = `/${studyUID}?accept=application/zip&dicomdir=true`
+        const response = await GET_DCM4CHEE_downloadDCM(params)
+        response.data.pipe(res)
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
+})
+
+router.route('/:id').get(async (req, res) => {
+    /* 	
             #swagger.tags = ['Dicom']
             #swagger.description = '取得單一DICOM' 
         */
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params
 
-    if (!id) return res.status(404).json({ message: "找不到DICOM" });
-    return res.status(200).json(id);
-  } catch (e) {
-    return res.status(500).json({ message: e.message });
-  }
-});
+        if (!id) return res.status(404).json({ message: '找不到DICOM' })
+        return res.status(200).json(id)
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
+})
 
-module.exports = router;
+module.exports = router
