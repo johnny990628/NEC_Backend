@@ -78,6 +78,7 @@ router.route('/').get(async (req, res) => {
                             const originalInstances = await asyncGetInstances(i.StudyInstanceUID, s.SeriesInstanceUID)
                             return {
                                 ...s,
+                                StudyInstanceUID: i.StudyInstanceUID,
                                 instances: originalInstances.map((i) => reduceData({ header: 'instances', d: i })),
                             }
                         })
