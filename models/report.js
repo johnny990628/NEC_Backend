@@ -1,6 +1,11 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
+const cancerFormSchema = new Schema({
+    key: { type: String, required: false },
+    value: { type: String, required: false },
+})
+
 const cancerSchema = new Schema(
     {
         id: {
@@ -19,6 +24,7 @@ const cancerSchema = new Schema(
             type: Number,
             required: true,
         },
+        form: [cancerFormSchema],
     },
     { _id: false }
 )
