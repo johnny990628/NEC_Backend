@@ -14,8 +14,13 @@ router.route('/').get(async (req, res) => {
         const originalReport = await REPORT.findOne(req.query, {
             records: { $slice: -1 },
         })
-        const report = { ...originalReport.toObject(), records: originalReport.records.pop().toObject() }
+
         const count = await REPORT.find(req.query).countDocuments()
+        if (count === 0) {
+            return res.status(404).json({ error: 'Report not found' })
+        }
+
+        const report = { ...originalReport.toObject(), records: originalReport.records.pop().toObject() }
 
         switch (contentType) {
             case 'text':
