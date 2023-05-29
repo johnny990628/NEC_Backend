@@ -59,7 +59,7 @@ function formatReport(item) {
     let formattedReport = ''
 
     formattedReport += `patientID: ${item.patientID}\n`
-    formattedReport += `reportID: ${item.id}\n`
+    formattedReport += `reportID: ${item._id}\n`
     formattedReport += `accessionNumber: ${item.accessionNumber}\n`
     formattedReport += `StudyInstanceUID: ${item.StudyInstanceUID}\n`
     formattedReport += `birads: ${JSON.stringify(item.records.birads)}\n`
