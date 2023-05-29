@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const url = require('url')
-const REPORT = require('../../models/report')
+const SCHEDULE = require('../../models/schedule')
 const fs = require('fs')
 
 router.route('/').get(async (req, res) => {
@@ -11,23 +11,49 @@ router.route('/').get(async (req, res) => {
         if (!patientID || !accessionNumber) {
             return res.status(400).json({ error: 'Missing patientID or accessionNumber' })
         }
-        const originalReport = await REPORT.findOne(req.query, {
-            records: { $slice: -1 },
-        })
 
-        const count = await REPORT.find(req.query).countDocuments()
-        if (count === 0) {
-            return res.status(404).json({ error: 'Report not found' })
-        }
+        const originalReport = await SCHEDULE.aggregate([
+            { $match: { patientID, accessionNumber } },
+            {
+                $lookup: {
+                    from: 'patients',
+                    localField: 'patientID',
+                    foreignField: 'id',
+                    as: 'patient',
+                },
+            },
+            {
+                $lookup: {
+                    from: 'reports',
+                    let: { pid: '$reportID' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$_id', { $toObjectId: '$$pid' }],
+                                },
+                            },
+                        },
+                    ],
+                    as: 'report',
+                },
+            },
+            {
+                $addFields: {
+                    patient: { $arrayElemAt: ['$patient', 0] },
+                    report: { $arrayElemAt: ['$report', 0] },
+                },
+            },
+        ])
 
-        const report = { ...originalReport.toObject(), records: originalReport.records.pop().toObject() }
+        const report = { ...originalReport[0], records: originalReport[0].report.records.pop() }
 
         switch (contentType) {
             case 'text':
                 const reportText = formatReport(report)
                 return res.status(200).send(reportText)
             case 'json':
-                return res.status(200).json({ results: report, count })
+                return res.status(200).json(report)
             case 'txtFile':
                 const filename = `${report.patientID}-${report.accessionNumber}.txt`
                 const fileContent = formatReport(report)
