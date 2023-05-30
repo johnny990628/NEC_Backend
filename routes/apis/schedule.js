@@ -91,7 +91,11 @@ router
     .patch(async (req, res) => {
         try {
             const { patientID, scheduleID, status } = req.body
-            const schedule = await SCHEDULE.findOneAndUpdate({ _id: scheduleID }, { $set: { status } }, { returnDocument: 'after' })
+            const schedule = await SCHEDULE.findOneAndUpdate(
+                { _id: scheduleID },
+                { $set: { status } },
+                { returnDocument: 'after' }
+            )
             // if (patientID) {
             //     await REPORT.findOneAndDelete({ patientID, status: 'pending' })
             //     await BLOOD.findOneAndDelete({ patientID })
@@ -105,10 +109,10 @@ router
     })
     .delete(async (req, res) => {
         try {
-            const { patientID } = req.body
-            const schedule = await SCHEDULE.findOneAndDelete({ patientID, status: 'wait-examination' })
+            const { scheduleID } = req.body
+            const schedule = await SCHEDULE.findOneAndDelete({ _id: scheduleID })
             await REPORT.findOneAndDelete({ _id: schedule.reportID })
-            // await BLOOD.findOneAndDelete({ patientID })
+
             if (!schedule) return res.status(404).json({ message: '找不到排程資料' })
             return res.status(200).json(schedule)
         } catch (e) {
@@ -125,7 +129,11 @@ router
         */
         try {
             const { _id } = req.params
-            const schedule = await SCHEDULE.findOneAndUpdate({ _id: _id }, { $set: { ...req.body } }, { returnDocument: 'after' })
+            const schedule = await SCHEDULE.findOneAndUpdate(
+                { _id: _id },
+                { $set: { ...req.body } },
+                { returnDocument: 'after' }
+            )
             return res.status(200).json(schedule)
         } catch (e) {
             return res.status(500).json({ message: e.message })
