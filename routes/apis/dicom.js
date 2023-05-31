@@ -72,14 +72,13 @@ router.route('/').get(async (req, res) => {
                 const series = await Promise.all(
                     originalSeries
                         .map((s) => {
-                            return reduceData({ header: 'series', d: s })
+                            return { ...reduceData({ header: 'series', d: s }), dicomTag: s }
                         })
                         .map(async (s) => {
                             const originalInstances = await asyncGetInstances(i.StudyInstanceUID, s.SeriesInstanceUID)
                             return {
                                 ...s,
                                 StudyInstanceUID: i.StudyInstanceUID,
-                                dicomTag: s,
                                 instances: originalInstances.map((i) => {
                                     return { ...reduceData({ header: 'instances', d: i }), dicomTag: i }
                                 }),
