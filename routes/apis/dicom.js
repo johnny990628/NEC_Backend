@@ -12,6 +12,16 @@ function parseQueryParams(req) {
     return queryObject
 }
 
+const reduceData = ({ header, d }) => {
+    const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
+        return {
+            ...accumulator,
+            [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
+        }
+    }, {})
+    return afterFormSeries
+}
+
 router.route('/').get(async (req, res) => {
     /* 	
             #swagger.tags = ['Dicom']
@@ -33,16 +43,6 @@ router.route('/').get(async (req, res) => {
 
         const { data: count } = await axios.get(process.env.PACS_URL)
 
-        const reduceData = ({ header, d }) => {
-            const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
-                return {
-                    ...accumulator,
-                    [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
-                }
-            }, {})
-            return afterFormSeries
-        }
-
         const asyncGetSeries = async (studyUID) => {
             const { data } = await axios.get(process.env.PACS_URL + `/${studyUID}/series`)
             return data
@@ -56,7 +56,7 @@ router.route('/').get(async (req, res) => {
         const result = data.map((d) => {
             const patient = reduceData({ header: 'patient', d })
             const study = reduceData({ header: 'study', d })
-            return { ...patient, ...study }
+            return { ...patient, ...study, dicomTag: d }
         })
 
         const asyncRes = await Promise.all(
@@ -79,7 +79,10 @@ router.route('/').get(async (req, res) => {
                             return {
                                 ...s,
                                 StudyInstanceUID: i.StudyInstanceUID,
-                                instances: originalInstances.map((i) => reduceData({ header: 'instances', d: i })),
+                                dicomTag: s,
+                                instances: originalInstances.map((i) => {
+                                    return { ...reduceData({ header: 'instances', d: i }), dicomTag: i }
+                                }),
                             }
                         })
                 )
