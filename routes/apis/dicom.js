@@ -126,4 +126,13 @@ router.route('/:id').get(async (req, res) => {
     }
 })
 
+router.route('/setting').get(async (req, res) => {
+    try {
+        const data = ['awd', 'awdawd']
+        return res.status(200).json(data)
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
+})
+
 module.exports = router
