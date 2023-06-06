@@ -15,6 +15,7 @@ router.use('/count', require('./apis/count'))
 router.use('/stats', require('./apis/stats'))
 router.use('/worklist', require('./apis/worklist'))
 router.use('/dicom', require('./apis/dicom'))
+router.use('/pacsSetting', require('./apis/pacsSetting'))
 router.use('/queryReport', require('./apis/queryReport'))
 
 module.exports = router
