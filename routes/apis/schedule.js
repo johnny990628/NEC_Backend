@@ -13,8 +13,8 @@ router
             #swagger.description = '取得排程' 
         */
         try {
-            const { search, dateFrom, dateTo } = req.query
-
+            const { limit, offset, sort, desc, search, dateFrom, dateTo } = req.query
+            if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
             const searchRe = new RegExp(search)
             const searchQuery = search
                 ? {
@@ -59,6 +59,9 @@ router
                         as: 'report',
                     },
                 },
+                { $sort: { [sort]: Number(desc) } },
+                { $skip: Number(limit) * Number(offset) },
+                { $limit: Number(limit) },
                 {
                     $addFields: {
                         patient: { $arrayElemAt: ['$patient', 0] },
