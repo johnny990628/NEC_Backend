@@ -43,13 +43,20 @@ const asyncGetInstances = async (pacs, studyUID, seriesUID) => {
     return data
 }
 
-const getPacsesStudies = async (pacsSetting) => {
+const getPacsesStudies = async (pacsSetting, queryParams) => {
     const pacsesStudies = await Promise.all(
         pacsSetting.map(async (pacsConfig) => {
-            const dicom = await axios.get(`${pacsConfig.pacsURL}/studies`)
-            const result = dicom.data.map((d) => {
-                return { ...d, pacsConfig }
+            const { data: dicom } = await axios.get(`${pacsConfig.pacsURL}/studies`, {
+                params: queryParams,
             })
+
+            const result =
+                dicom.length > 0
+                    ? dicom.map((d) => {
+                          return { ...d, pacsConfig }
+                      })
+                    : []
+
             return result
         })
     )
@@ -150,7 +157,7 @@ router.route('/').get(async (req, res) => {
         const pacsSetting = await PACSSETTING.find({ isOpen: true })
 
         //獲取所有pacs的study
-        const pacsesStudies = await getPacsesStudies(pacsSetting)
+        const pacsesStudies = await getPacsesStudies(pacsSetting, queryParams)
 
         //將所有pacs合併
         const mappingPacs = getMappingPacs(pacsesStudies)
