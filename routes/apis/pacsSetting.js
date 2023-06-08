@@ -90,10 +90,6 @@ router.route('/test').post(async (req, res) => {
         )
         const SOPInstanceUID = instances.data[0]['00080018']['Value'][0]
 
-        // console.log('studyInstanceUID', studyInstanceUID)
-        // console.log('seriesInstanceUID', seriesInstanceUID)
-        // console.log('SOPInstanceUID', SOPInstanceUID)
-
         const wadoURLTestURL =
             wadoURL +
             '/wado?requestType=WADO&studyUID=' +
