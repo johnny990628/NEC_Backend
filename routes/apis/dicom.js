@@ -72,10 +72,13 @@ const getMappingPacs = (pacsesStudies) => {
             const existingItem = accumulator.find((accItem) => accItem.StudyInstanceUID === StudyInstanceUID)
             if (existingItem) {
                 // If item with the same name already exists in the accumulator, merge the properties
-                existingItem.pacsOf = [...existingItem.pacsOf, pacsConfig.pacsName]
+                existingItem.pacsOf = [
+                    ...existingItem.pacsOf,
+                    { pacsName: pacsConfig.pacsName, shorteningPacsName: pacsConfig.shorteningPacsName },
+                ]
             } else {
                 // Otherwise, add the item to the accumulator
-                item.pacsOf = [pacsConfig.pacsName]
+                item.pacsOf = [{ pacsName: pacsConfig.pacsName, shorteningPacsName: pacsConfig.shorteningPacsName }]
                 accumulator.push(item)
             }
         })
