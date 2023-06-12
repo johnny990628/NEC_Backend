@@ -76,4 +76,36 @@ router.route('/:id').get(async (req, res) => {
         return res.status(500).json({ message: e.message })
     }
 })
+
+router.route('/test').post(async (req, res) => {
+    try {
+        const { pacsURL, wadoURL } = req.body
+
+        const pacsURLTest = await axios.get(pacsURL + '/studies')
+        const studyInstanceUID = pacsURLTest.data[0]['0020000D']['Value'][0]
+        const seriesID = await axios.get(pacsURL + '/studies/' + studyInstanceUID + '/series')
+        const seriesInstanceUID = seriesID.data[0]['0020000E']['Value'][0]
+        const instances = await axios.get(
+            pacsURL + '/studies/' + studyInstanceUID + '/series/' + seriesInstanceUID + '/instances'
+        )
+        const SOPInstanceUID = instances.data[0]['00080018']['Value'][0]
+
+        const wadoURLTestURL =
+            wadoURL +
+            '/wado?requestType=WADO&studyUID=' +
+            studyInstanceUID +
+            '&seriesUID=' +
+            seriesInstanceUID +
+            '&objectUID=' +
+            SOPInstanceUID
+        const wadoURLTest = await axios.get(wadoURLTestURL)
+
+        return res.status(200).json({
+            pacsURL: pacsURLTest.status === 200 ? true : false,
+            wadoURL: wadoURLTest.status === 200 ? true : false,
+        })
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
+})
 module.exports = router

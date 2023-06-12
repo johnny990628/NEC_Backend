@@ -15,11 +15,13 @@ function parseQueryParams(req) {
 
 const reduceData = ({ header, d }) => {
     const afterFormSeries = dicomTag[header].reduce((accumulator, currentValue) => {
+        const value = d[currentValue.tag]?.Value?.[0] // 添加属性存在性的检查
         return {
             ...accumulator,
-            [currentValue.keyword]: (d[currentValue.tag]['Value'] && d[currentValue.tag]['Value'][0]) || null,
+            [currentValue.keyword]: value || null,
         }
     }, {})
+
     return afterFormSeries
 }
 
@@ -29,17 +31,117 @@ const getArrayWithPagination = (originalArray, limit, offset) => {
     const newArray = originalArray.slice(startIndex, endIndex)
     return newArray
 }
+
 const asyncGetSeries = async (pacs, studyUID) => {
-    const { data } = await axios.get(`${pacs.pacsURL}/${pacs.pacsAETitle}/rs/studies/${studyUID}/series`)
+    const { data } = await axios.get(`${pacs.pacsURL}/studies/${studyUID}/series`)
 
     return data
 }
 
 const asyncGetInstances = async (pacs, studyUID, seriesUID) => {
-    const { data } = await axios.get(
-        `${pacs.pacsURL}/${pacs.pacsAETitle}/rs/studies/${studyUID}/series/${seriesUID}/instances`
-    )
+    const { data } = await axios.get(`${pacs.pacsURL}/studies/${studyUID}/series/${seriesUID}/instances`)
     return data
+}
+
+const getPacsesStudies = async (pacsSetting, queryParams) => {
+    const pacsesStudies = await Promise.all(
+        pacsSetting.map(async (pacsConfig) => {
+            const { data: dicom } = await axios.get(`${pacsConfig.pacsURL}/studies`, {
+                params: queryParams,
+            })
+
+            const result =
+                dicom.length > 0
+                    ? dicom.map((d) => {
+                          return { ...d, pacsConfig }
+                      })
+                    : []
+
+            return result
+        })
+    )
+
+    const results = pacsesStudies.map((item) => {
+        return item.map((d) => {
+            const patient = reduceData({ header: 'patient', d })
+            const study = reduceData({ header: 'study', d })
+            const pacsConfig = d.pacsConfig
+            return { ...patient, ...study, pacsConfig, dicomTag: d }
+        })
+    })
+    return results
+}
+
+const getMappingPacs = (pacsesStudies) => {
+    const results = pacsesStudies.reduce((accumulator, currentValue) => {
+        currentValue.forEach((item) => {
+            const { StudyInstanceUID, pacsConfig } = item
+            const existingItem = accumulator.find((accItem) => accItem.StudyInstanceUID === StudyInstanceUID)
+            if (existingItem) {
+                // If item with the same name already exists in the accumulator, merge the properties
+                existingItem.pacsOf = [
+                    ...existingItem.pacsOf,
+                    { pacsName: pacsConfig.pacsName, shorteningPacsName: pacsConfig.shorteningPacsName },
+                ]
+            } else {
+                // Otherwise, add the item to the accumulator
+                item.pacsOf = [{ pacsName: pacsConfig.pacsName, shorteningPacsName: pacsConfig.shorteningPacsName }]
+                accumulator.push(item)
+            }
+        })
+        return accumulator
+    }, [])
+    return results
+}
+
+const getWolePacsStudies = async (arrayWithPaginationData) => {
+    const results = await Promise.all(
+        arrayWithPaginationData.map(async (study) => {
+            try {
+                const originalSeries = await asyncGetSeries(study.pacsConfig, study.StudyInstanceUID)
+                const series = originalSeries.map((d) => {
+                    const reducedSeries = reduceData({ header: 'series', d })
+                    return { dicomTag: d, ...reducedSeries }
+                })
+
+                return { ...study, series }
+            } catch (error) {
+                // 处理错误，例如打印错误消息或抛出自定义错误
+                console.error('Error occurred:', error)
+                // 抛出自定义错误
+                throw new Error('Failed to retrieve series data.')
+            }
+        })
+    )
+    return results
+}
+
+const getWolePacsStudiesInstances = async (wholePacsStudies) => {
+    const results = await Promise.all(
+        wholePacsStudies.map(async (study) => {
+            var SeriesInstanceUID = null
+            var SOPInstanceUID = null
+            const result = await Promise.all(
+                study.series.map(async (series) => {
+                    const originalInstances = await asyncGetInstances(
+                        study.pacsConfig,
+                        study.StudyInstanceUID,
+                        series.SeriesInstanceUID
+                    )
+                    SeriesInstanceUID = originalInstances[0]['0020000E']['Value'][0]
+                    SOPInstanceUID = originalInstances[0]['00080018']['Value'][0]
+
+                    const instances = originalInstances.map((d) => {
+                        const reducedInstances = reduceData({ header: 'instances', d })
+                        return { dicomTag: d, ...reducedInstances }
+                    })
+                    return { ...series, instances }
+                })
+            )
+            return { ...study, series: result, SeriesInstanceUID, SOPInstanceUID }
+        })
+    )
+    return results
 }
 
 router.route('/').get(async (req, res) => {
@@ -52,105 +154,32 @@ router.route('/').get(async (req, res) => {
         delete queryParams.sort
         queryParams.PatientName = decodeURIComponent(queryParams.PatientName || '')
 
-        const pacsSetting = await PACSSETTING.find()
+        const pacsSetting = await PACSSETTING.find({ isOpen: true })
 
         //獲取所有pacs的study
-        const pacsesStudies = await Promise.all(
-            pacsSetting.map(async (pacsConfig) => {
-                const dicom = await axios.get(`${pacsConfig.pacsURL}/${pacsConfig.pacsAETitle}/rs/studies`)
-                const result = dicom.data.map((d) => {
-                    return { ...d, pacsConfig }
-                })
-                return result
-            })
-        )
-
-        //dicomTag轉換
-        const reducedDatas = pacsesStudies.map((item) => {
-            return item.map((d) => {
-                const patient = reduceData({ header: 'patient', d })
-                const study = reduceData({ header: 'study', d })
-                const pacsConfig = d.pacsConfig
-                return { ...patient, ...study, pacsConfig, dicomTag: d }
-            })
-        })
-
-        //獲取所有pacs的study的series
-        const wholePacsStudies = await Promise.all(
-            reducedDatas.map(async (pacs) => {
-                const result = await Promise.all(
-                    pacs.map(async (study) => {
-                        const originalSeries = await asyncGetSeries(study.pacsConfig, study.StudyInstanceUID)
-                        const series = originalSeries.map((d) => {
-                            const reducedSeries = reduceData({ header: 'series', d })
-                            return { dicomTag: d, ...reducedSeries }
-                        })
-                        return { ...study, series }
-                    })
-                )
-                return result
-            })
-        )
-
-        //獲取所有pacs的study的series的instances
-        const wholePacsStudiesInstances = await Promise.all(
-            wholePacsStudies.map(async (pacs) => {
-                const result = await Promise.all(
-                    pacs.map(async (study) => {
-                        var SeriesInstanceUID = null
-                        var SOPInstanceUID = null
-                        const result = await Promise.all(
-                            study.series.map(async (series) => {
-                                const originalInstances = await asyncGetInstances(
-                                    study.pacsConfig,
-                                    study.StudyInstanceUID,
-                                    series.SeriesInstanceUID
-                                )
-                                SeriesInstanceUID = originalInstances[0]['0020000E']['Value'][0]
-                                SOPInstanceUID = originalInstances[0]['00080018']['Value'][0]
-
-                                const instances = originalInstances.map((d) => {
-                                    const reducedInstances = reduceData({ header: 'instances', d })
-                                    return { dicomTag: d, ...reducedInstances }
-                                })
-                                return { ...series, instances }
-                            })
-                        )
-                        return { ...study, series: result, SeriesInstanceUID, SOPInstanceUID }
-                    })
-                )
-                return result
-            })
-        )
+        const pacsesStudies = await getPacsesStudies(pacsSetting, queryParams)
 
         //將所有pacs合併
-        const beforePaginationResults = wholePacsStudiesInstances.reduce((accumulator, currentValue) => {
-            currentValue.forEach((item) => {
-                const { StudyInstanceUID, pacsConfig } = item
-                const existingItem = accumulator.find((accItem) => accItem.StudyInstanceUID === StudyInstanceUID)
-                if (existingItem) {
-                    // If item with the same name already exists in the accumulator, merge the properties
-                    existingItem.pacsOf = [...existingItem.pacsOf, pacsConfig.pacsName]
-                } else {
-                    // Otherwise, add the item to the accumulator
-                    item.pacsOf = [pacsConfig.pacsName]
-                    accumulator.push(item)
-                }
-            })
-            return accumulator
-        }, [])
+        const mappingPacs = getMappingPacs(pacsesStudies)
 
-        const getArrayWithPaginationData = getArrayWithPagination(beforePaginationResults, limit, offset)
+        //分頁
+        const arrayWithPaginationData = getArrayWithPagination(mappingPacs, limit, offset)
 
-        const results = getArrayWithPaginationData.map((item) => {
+        //獲取所有pacs的study的series
+        const wholePacsStudies = await getWolePacsStudies(arrayWithPaginationData)
+
+        //獲取所有pacs的study的series的instances
+        const wholePacsStudiesInstances = await getWolePacsStudiesInstances(wholePacsStudies)
+
+        const results = wholePacsStudiesInstances.map((item) => {
             const { pacsConfig } = item
             return {
                 ...item,
-                imageURL: `${pacsConfig.pacsWadoURL}/${pacsConfig.pacsAETitle}/wado?requestType=WADO&studyUID=${item.StudyInstanceUID}&seriesUID=${item.SeriesInstanceUID}&objectUID=${item.SOPInstanceUID}&contentType=image/jpeg`,
+                imageURL: `${pacsConfig.pacsWadoURL}/wado?requestType=WADO&studyUID=${item.StudyInstanceUID}&seriesUID=${item.SeriesInstanceUID}&objectUID=${item.SOPInstanceUID}&contentType=image/jpeg`,
             }
         })
 
-        return res.status(200).json({ results, count: beforePaginationResults.length })
+        return res.status(200).json({ results, count: mappingPacs.length })
     } catch (err) {
         return res.status(500).json({ message: err.message })
     }
