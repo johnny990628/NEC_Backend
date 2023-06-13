@@ -263,11 +263,18 @@ router.route('/').get(async (req, res) => {
 //     }
 // })
 
-router.route('/downloadDCM/:studyUID').get(async (req, res) => {
+router.route('/downloadDCM').get(async (req, res) => {
     try {
-        const { studyUID } = req.params
-        const params = `/${studyUID}?accept=application/zip&dicomdir=true`
-        const response = await GET_DCM4CHEE_downloadDCM(params)
+        const queryParams = parseQueryParams(req)
+        const { pacsID, studyUID } = queryParams
+
+        const { pacsURL } = await PACSSETTING.findOne({ _id: pacsID })
+
+        const paramsPacsURL = `${pacsURL}/studies/${studyUID}?accept=application/zip&dicomdir=true`
+
+        console.log(paramsPacsURL)
+
+        const response = await GET_DCM4CHEE_downloadDCM(paramsPacsURL)
         response.data.pipe(res)
     } catch (e) {
         return res.status(500).json({ message: e.message })
