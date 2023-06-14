@@ -79,7 +79,10 @@ router.route('/:id').get(async (req, res) => {
 
 router.route('/test').post(async (req, res) => {
     try {
-        const { pacsURL, wadoURL } = req.body
+        const { pacsQidoURL, pacsWadoURL, serverURL } = req.body
+
+        const pacsURL = serverURL + pacsQidoURL
+        const wadoURL = serverURL + pacsWadoURL
 
         const pacsURLTest = await axios.get(pacsURL + '/studies')
         const studyInstanceUID = pacsURLTest.data[0]['0020000D']['Value'][0]
