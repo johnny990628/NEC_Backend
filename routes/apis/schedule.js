@@ -13,7 +13,9 @@ router
             #swagger.description = '取得排程' 
         */
         try {
-            const { limit, offset, sort, desc, search, dateFrom, dateTo } = req.query
+            const { limit, offset, sort, desc, search, dateRange, dateTo } = req.query
+
+            const { from, to } = JSON.parse(dateRange)
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
             const searchRe = new RegExp(search)
             const searchQuery = search
@@ -22,15 +24,12 @@ router
                   }
                 : {}
 
-            const dateConditions =
-                dateFrom && dateTo
-                    ? {
-                          createdAt: {
-                              $gte: new Date(dateFrom),
-                              $lte: new Date(dateTo),
-                          },
-                      }
-                    : {}
+            const dateConditions = {
+                createdAt: {
+                    $gte: new Date(from),
+                    $lte: new Date(to),
+                },
+            }
 
             const schedule = await SCHEDULE.aggregate([
                 { $match: dateConditions },

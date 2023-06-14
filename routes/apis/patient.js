@@ -14,7 +14,9 @@ router
             #swagger.description = '取得病人' 
         */
         try {
-            const { limit, offset, search, sort, desc, status } = req.query
+            const { limit, offset, search, sort, desc, dateRange, status } = req.query
+            const { from, to } = JSON.parse(dateRange)
+
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
 
             const searchRe = new RegExp(search)
@@ -24,10 +26,16 @@ router
                   }
                 : {}
 
-            let statusMatch = status === 'all' ? {} : { 'schedule.status': status }
+            const dateConditions = {
+                createdAt: {
+                    $gte: new Date(from),
+                    $lte: new Date(to),
+                },
+            }
 
             const patients = await PATIENT.aggregate([
                 { $match: searchQuery },
+                { $match: dateConditions },
                 {
                     $lookup: {
                         from: 'schedules',
@@ -44,9 +52,7 @@ router
                         as: 'report',
                     },
                 },
-                {
-                    $match: statusMatch,
-                },
+
                 { $sort: { [sort]: Number(desc) } },
                 { $skip: Number(limit) * Number(offset) },
                 { $limit: Number(limit) },
@@ -60,9 +66,6 @@ router
                     $project: {
                         'creator.password': 0,
                     },
-                },
-                {
-                    $match: statusMatch,
                 },
             ])
 
@@ -129,7 +132,11 @@ router
         */
         try {
             const { patientID } = req.params
-            const patient = await PATIENT.findOneAndUpdate({ id: patientID }, { $set: { ...req.body } }, { returnDocument: 'after' })
+            const patient = await PATIENT.findOneAndUpdate(
+                { id: patientID },
+                { $set: { ...req.body } },
+                { returnDocument: 'after' }
+            )
             return res.status(200).json(patient)
         } catch (e) {
             return res.status(500).json({ message: e.message })
