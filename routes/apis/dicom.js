@@ -33,20 +33,24 @@ const getArrayWithPagination = (originalArray, limit, offset) => {
 }
 
 const asyncGetSeries = async (pacs, studyUID) => {
-    const { data } = await axios.get(`${pacs.pacsURL}/studies/${studyUID}/series`)
+    const fetchURL = `${pacs.serverURL}${pacs.pacsQidoURL}/studies/${studyUID}/series`
+    const { data } = await axios.get(fetchURL)
 
     return data
 }
 
 const asyncGetInstances = async (pacs, studyUID, seriesUID) => {
-    const { data } = await axios.get(`${pacs.pacsURL}/studies/${studyUID}/series/${seriesUID}/instances`)
+    const fetchURL = `${pacs.serverURL}${pacs.pacsQidoURL}/studies/${studyUID}/series/${seriesUID}/instances`
+    const { data } = await axios.get(fetchURL)
     return data
 }
 
 const getPacsesStudies = async (pacsSetting, queryParams) => {
     const pacsesStudies = await Promise.all(
         pacsSetting.map(async (pacsConfig) => {
-            const { data: dicom } = await axios.get(`${pacsConfig.pacsURL}/studies`, {
+            const fetchURL = `${pacsConfig.serverURL}${pacsConfig.pacsQidoURL}/studies`
+
+            const { data: dicom } = await axios.get(fetchURL, {
                 params: queryParams,
             })
 
@@ -175,7 +179,7 @@ router.route('/').get(async (req, res) => {
             const { pacsConfig } = item
             return {
                 ...item,
-                imageURL: `${pacsConfig.pacsWadoURL}/wado?requestType=WADO&studyUID=${item.StudyInstanceUID}&seriesUID=${item.SeriesInstanceUID}&objectUID=${item.SOPInstanceUID}&contentType=image/jpeg`,
+                imageURL: `${pacsConfig.serverURL}${pacsConfig.pacsWadoURL}/wado?requestType=WADO&studyUID=${item.StudyInstanceUID}&seriesUID=${item.SeriesInstanceUID}&objectUID=${item.SOPInstanceUID}&contentType=image/jpeg`,
             }
         })
 
@@ -268,10 +272,9 @@ router.route('/downloadDCM').get(async (req, res) => {
         const queryParams = parseQueryParams(req)
         const { pacsID, studyUID } = queryParams
 
-        const { pacsURL } = await PACSSETTING.findOne({ _id: pacsID })
+        const { serverURL, pacsQidoURL } = await PACSSETTING.findOne({ _id: pacsID })
 
-        const paramsPacsURL = `${pacsURL}/studies/${studyUID}?accept=application/zip&dicomdir=true`
-
+        const paramsPacsURL = `${serverURL}${pacsQidoURL}/studies/${studyUID}?accept=application/zip&dicomdir=true`
         const response = await GET_DCM4CHEE_downloadDCM(paramsPacsURL)
         response.data.pipe(res)
     } catch (e) {
