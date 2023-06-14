@@ -275,7 +275,6 @@ router.route('/downloadDCM').get(async (req, res) => {
         const { serverURL, pacsQidoURL } = await PACSSETTING.findOne({ _id: pacsID })
 
         const paramsPacsURL = `${serverURL}${pacsQidoURL}/studies/${studyUID}?accept=application/zip&dicomdir=true`
-        console.log(paramsPacsURL)
         const response = await GET_DCM4CHEE_downloadDCM(paramsPacsURL)
         response.data.pipe(res)
     } catch (e) {
