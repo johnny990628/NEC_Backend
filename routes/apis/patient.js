@@ -16,8 +16,17 @@ router
         try {
             const { limit, offset, search, sort, desc, dateRange, status } = req.query
 
-            if (!dateRange) return res.status(400).json({ message: 'Need a date range' })
-            const { from, to } = JSON.parse(dateRange)
+            if (!dateRange && status !== 'all') return res.status(400).json({ message: 'Need a date range' })
+
+            const dateConditions =
+                status !== 'all'
+                    ? {
+                          createdAt: {
+                              $gte: new Date(JSON.parse(dateRange).from),
+                              $lte: new Date(JSON.parse(dateRange).to),
+                          },
+                      }
+                    : {}
 
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
 
@@ -27,13 +36,6 @@ router
                       $or: [{ id: searchRe }, { name: searchRe }],
                   }
                 : {}
-
-            const dateConditions = {
-                createdAt: {
-                    $gte: new Date(from),
-                    $lte: new Date(to),
-                },
-            }
 
             const patients = await PATIENT.aggregate([
                 { $match: searchQuery },

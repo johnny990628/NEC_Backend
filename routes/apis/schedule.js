@@ -13,24 +13,28 @@ router
             #swagger.description = '取得排程' 
         */
         try {
-            const { limit, offset, sort, desc, search, dateRange, dateTo } = req.query
-            if (!dateRange) return res.status(400).json({ message: 'Need a date range' })
-            const { from, to } = JSON.parse(dateRange)
+            const { limit, offset, sort, desc, search, dateRange, status } = req.query
+
+            if (!dateRange && status !== 'all') return res.status(400).json({ message: 'Need a date range' })
+
+            const dateConditions =
+                status !== 'all'
+                    ? {
+                          createdAt: {
+                              $gte: new Date(JSON.parse(dateRange).from),
+                              $lte: new Date(JSON.parse(dateRange).to),
+                          },
+                      }
+                    : {}
 
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
+
             const searchRe = new RegExp(search)
             const searchQuery = search
                 ? {
                       $or: [{ procedureCode: searchRe }, { patientID: searchRe }],
                   }
                 : {}
-
-            const dateConditions = {
-                createdAt: {
-                    $gte: new Date(from),
-                    $lte: new Date(to),
-                },
-            }
 
             const schedule = await SCHEDULE.aggregate([
                 { $match: dateConditions },
