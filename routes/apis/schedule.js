@@ -14,8 +14,9 @@ router
         */
         try {
             const { limit, offset, sort, desc, search, dateRange, dateTo } = req.query
-
+            if (!dateRange) return res.status(400).json({ message: 'Need a date range' })
             const { from, to } = JSON.parse(dateRange)
+
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
             const searchRe = new RegExp(search)
             const searchQuery = search
@@ -69,8 +70,7 @@ router
                 },
             ])
 
-            // const schedule = await SCHEDULE.find(query).populate('patient').populate('report')
-            const count = await SCHEDULE.find(searchQuery).countDocuments()
+            const count = await SCHEDULE.find({ ...searchQuery, ...dateConditions }).countDocuments()
 
             return res.status(200).json({ results: schedule, count })
         } catch (e) {

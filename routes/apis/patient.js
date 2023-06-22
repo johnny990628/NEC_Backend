@@ -15,6 +15,8 @@ router
         */
         try {
             const { limit, offset, search, sort, desc, dateRange, status } = req.query
+
+            if (!dateRange) return res.status(400).json({ message: 'Need a date range' })
             const { from, to } = JSON.parse(dateRange)
 
             if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
@@ -69,15 +71,8 @@ router
                 },
             ])
 
-            const count = await PATIENT.find(searchQuery).countDocuments()
+            const count = await PATIENT.find({ ...searchQuery, ...dateConditions }).countDocuments()
 
-            // const patients = await PATIENT.find(searchQuery)
-            //     .sort({ [sort]: desc })
-            //     .limit(limit)
-            //     .skip(limit * offset)
-            //     .populate('schedule')
-            //     .populate('blood')
-            //     .populate('report')
             return res.status(200).json({ count, results: patients })
         } catch (e) {
             return res.status(500).json({ message: e.message })
