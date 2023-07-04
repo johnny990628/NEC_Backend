@@ -28,15 +28,16 @@ const cancerSchema = new Schema(
     },
     { _id: false }
 )
-
-const biradsSchema = new Schema({
-    value: { type: Number },
+const sumSchema = new Schema({
+    key: { type: String, required: false },
+    value: { type: Schema.Types.Mixed, required: false },
 })
 
 const recordSchema = new Schema(
     {
         report: { L: [cancerSchema], R: [cancerSchema] },
         birads: { L: { type: Number }, R: { type: Number } },
+        summarize: [sumSchema],
         id: { type: String },
     },
     { _id: false }
