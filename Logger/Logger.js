@@ -22,7 +22,7 @@ setInterval(accessLogStream, 30000)
 
 const Logger = (req, res, next) => {
     const logData = {
-        remoteAddr: req.ip,
+        remoteAddr: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress,
         method: req.method,
         url: req.url,
         status: res.statusCode,
