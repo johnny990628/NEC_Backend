@@ -8,7 +8,7 @@ const mongoose = require('mongoose')
 //swagger
 const swaggerUi = require('swagger-ui-express')
 const swaggerFile = require('./swagger_output.json')
-const Logger = require('./Logger/Logger')
+const { Logger } = require('./Logger/Logger')
 app.use('/api-doc', swaggerUi.serve, swaggerUi.setup(swaggerFile))
 
 mongoose.connect(process.env.DB_URL).catch((error) => console.log(error))
@@ -24,7 +24,7 @@ app.use(cors({ credentials: true, origin: process.env.WEB_ORIGIN_URL }))
 app.use(cookieParser())
 app.use(express.static(path.resolve(__dirname, './public/build')))
 
-app.use(Logger.Logger)
+app.use(Logger)
 
 app.use('/nec/auth', authRouter)
 app.use('/nec/api', APIRouter)
