@@ -1,6 +1,3 @@
-const morgan = require('morgan')
-const fs = require('fs')
-const path = require('path')
 const loggerSchema = require('../models/logger')
 
 const logBuffer = [] // 日誌緩衝區
