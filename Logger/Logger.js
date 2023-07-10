@@ -1,5 +1,5 @@
 const loggerSchema = require('../models/logger')
-
+const { verifyTokenGetUser } = require('../routes/auth')
 const logBuffer = [] // 日誌緩衝區
 
 const accessLogStream = () => {
@@ -21,7 +21,15 @@ const accessLogStream = () => {
 setInterval(accessLogStream, 30000)
 
 const Logger = (req, res, next) => {
+    const accessToken =
+        req.cookies.accessToken || (req.headers['authorization'] ? req.headers['authorization'].split(' ').pop() : null)
+    const { username, userId } =
+        accessToken !== null ? verifyTokenGetUser(accessToken) : { userId: 'not login', username: 'not login' }
     const logData = {
+        user: {
+            userId: userId,
+            username: username,
+        },
         remoteAddr: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress,
         method: req.method,
         url: req.url,
