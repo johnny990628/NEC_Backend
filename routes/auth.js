@@ -6,7 +6,8 @@ const bcrypt = require('bcrypt')
 const { USER } = require('../models/user')
 
 const verifyToken = (req, res, next) => {
-    const accessToken = req.cookies.accessToken || (req.headers['authorization'] ? req.headers['authorization'].split(' ').pop() : null)
+    const accessToken =
+        req.cookies.accessToken || (req.headers['authorization'] ? req.headers['authorization'].split(' ').pop() : null)
 
     if (accessToken) {
         jwt.verify(accessToken, process.env.JWT_SECRECT_KEY, (err, token) => {
@@ -20,6 +21,14 @@ const verifyToken = (req, res, next) => {
     } else {
         return res.status(403).json({ message: 'Need a token' })
     }
+}
+
+const verifyTokenGetUser = (accessToken) => {
+    const secretKey = process.env.JWT_SECRECT_KEY
+    const decoded = jwt.verify(accessToken, secretKey)
+    const userId = decoded.id
+    const username = decoded.username
+    return { userId, username }
 }
 
 router.route('/login').post(async (req, res) => {
@@ -85,7 +94,9 @@ router.route('/verify').post(async (req, res) => {
         #swagger.description = '驗證' 
     */
     try {
-        const accessToken = req.cookies.accessToken || (req.headers['authorization'] ? req.headers['authorization'].split(' ').pop() : null)
+        const accessToken =
+            req.cookies.accessToken ||
+            (req.headers['authorization'] ? req.headers['authorization'].split(' ').pop() : null)
 
         if (accessToken) {
             jwt.verify(accessToken, process.env.JWT_SECRECT_KEY, async (err, token) => {
@@ -104,4 +115,4 @@ router.route('/verify').post(async (req, res) => {
     }
 })
 
-module.exports = { router, verifyToken }
+module.exports = { router, verifyToken, verifyTokenGetUser }
