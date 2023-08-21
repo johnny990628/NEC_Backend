@@ -24,7 +24,7 @@ app.use(cors({ credentials: true, origin: process.env.WEB_ORIGIN_URL }))
 app.use(cookieParser())
 app.use(express.static(path.resolve(__dirname, './public/build')))
 
-app.use(Logger)
+// app.use(Logger)
 
 app.use('/nec/auth', authRouter)
 app.use('/nec/api', APIRouter)

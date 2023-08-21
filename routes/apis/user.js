@@ -56,7 +56,11 @@ router
         */
         try {
             const { _id } = req.params
-            const user = await USER.findOneAndUpdate({ _id }, { $set: { ...req.body } }, { returnDocument: 'after' }).select({
+            const user = await USER.findOneAndUpdate(
+                { _id },
+                { $set: { ...req.body } },
+                { returnDocument: 'after' }
+            ).select({
                 password: 0,
             })
             if (!user) return res.status(404).json({ message: '找不到使用者資料' })
