@@ -5,7 +5,7 @@ const { verifyToken } = require('./auth')
 router.use('/department', require('./apis/department'))
 router.use('/exist', require('./apis/exist'))
 
-router.use(verifyToken)
+// router.use(verifyToken)
 router.use('/patient', require('./apis/patient'))
 router.use('/report', require('./apis/report'))
 router.use('/user', require('./apis/user'))

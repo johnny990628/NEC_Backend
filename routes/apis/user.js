@@ -1,7 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const bcrypt = require('bcrypt')
-
+const axios = require('axios')
+const { getAccessTokenForRegistration } = require('../auth')
 const { USER } = require('../../models/user')
 
 router.route('/').get(async (req, res) => {
@@ -11,24 +12,37 @@ router.route('/').get(async (req, res) => {
         */
     try {
         const { limit, offset, search, sort, desc } = req.query
-        if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
-        const searchRe = new RegExp(search)
-        const searchQuery = search
-            ? {
-                  $or: [{ username: searchRe }, { name: searchRe }],
-              }
-            : {}
+        // if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
+        const {
+            data: { access_token: accessToken },
+        } = await getAccessTokenForRegistration()
 
-        const users = await USER.find(searchQuery)
-            .limit(limit)
-            .sort({ [sort]: desc })
-            .skip(limit * offset)
-            .select({ password: 0 })
+        const { data: users } = await axios({
+            method: 'get',
+            url: process.env.KEYCLOAK_AUTH_USERS_URL,
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        })
+        console.log(users)
+        // const searchRe = new RegExp(search)
+        // const searchQuery = search
+        //     ? {
+        //           $or: [{ username: searchRe }, { name: searchRe }],
+        //       }
+        //     : {}
 
-        const count = await USER.find(searchQuery).countDocuments()
+        // const users = await USER.find(searchQuery)
+        //     .limit(limit)
+        //     .sort({ [sort]: desc })
+        //     .skip(limit * offset)
+        //     .select({ password: 0 })
 
-        return res.status(200).json({ count, results: users })
+        // const count = await USER.find(searchQuery).countDocuments()
+
+        return res.status(200).json({ count: users.length, results: users })
     } catch (e) {
+        console.log(e)
         return res.status(500).json({ message: e.message })
     }
 })

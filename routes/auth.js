@@ -134,4 +134,4 @@ router.route('/verify').post(async (req, res) => {
     }
 })
 
-module.exports = { router, verifyToken, verifyTokenGetUser }
+module.exports = { router, verifyToken, verifyTokenGetUser, getAccessTokenForRegistration }
