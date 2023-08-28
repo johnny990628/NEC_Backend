@@ -24,21 +24,14 @@ router.route('/').get(async (req, res) => {
                 Authorization: `Bearer ${accessToken}`,
             },
         })
-        console.log(users)
-        // const searchRe = new RegExp(search)
-        // const searchQuery = search
-        //     ? {
-        //           $or: [{ username: searchRe }, { name: searchRe }],
-        //       }
-        //     : {}
-
-        // const users = await USER.find(searchQuery)
-        //     .limit(limit)
-        //     .sort({ [sort]: desc })
-        //     .skip(limit * offset)
-        //     .select({ password: 0 })
-
-        // const count = await USER.find(searchQuery).countDocuments()
+        const { data: roles } = await axios({
+            method: 'get',
+            url: process.env.KEYCLOAK_AUTH_ROLES_URL,
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        })
+        console.log(roles)
 
         return res.status(200).json({ count: users.length, results: users })
     } catch (e) {
