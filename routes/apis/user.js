@@ -5,6 +5,51 @@ const axios = require('axios')
 const { getAccessTokenForRegistration } = require('../auth')
 const { USER } = require('../../models/user')
 
+const getAllUsers = async (accessToken) => {
+    const { data: users } = await axios({
+        method: 'get',
+        url: process.env.KEYCLOAK_AUTH_USERS_URL,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    })
+    return users
+}
+const getRolesById = async (accessToken, userId) => {
+    const { data: roles } = await axios({
+        method: 'get',
+        url: `${process.env.KEYCLOAK_AUTH_USERS_URL}/${userId}/role-mappings/realm`,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    })
+    return roles
+}
+
+const addRolesById = async (accessToken, userId, updateRole) => {
+    const { data: roles } = await axios({
+        method: 'post',
+        url: `${process.env.KEYCLOAK_AUTH_USERS_URL}/${userId}/role-mappings/realm`,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+        data: [updateRole],
+    })
+    return roles
+}
+
+const deleteRolesById = async (accessToken, userId, removeRole) => {
+    const { data: roles } = await axios({
+        method: 'delete',
+        url: `${process.env.KEYCLOAK_AUTH_USERS_URL}/${userId}/role-mappings/realm`,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+        data: [removeRole],
+    })
+    return roles
+}
+
 router.route('/').get(async (req, res) => {
     /* 	
             #swagger.tags = ['Users']
@@ -13,27 +58,17 @@ router.route('/').get(async (req, res) => {
     try {
         const { limit, offset, search, sort, desc } = req.query
         // if (!limit || !offset) return res.status(400).json({ message: 'Need a limit and offset' })
-        const {
-            data: { access_token: accessToken },
-        } = await getAccessTokenForRegistration()
+        const accessToken = req.accessToken
 
-        const { data: users } = await axios({
-            method: 'get',
-            url: process.env.KEYCLOAK_AUTH_USERS_URL,
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        })
-        const { data: roles } = await axios({
-            method: 'get',
-            url: process.env.KEYCLOAK_AUTH_ROLES_URL,
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        })
-        console.log(roles)
+        const users = await getAllUsers(accessToken)
+        const results = await Promise.all(
+            users.map(async (user) => {
+                const roles = await getRolesById(accessToken, user.id)
+                return { ...user, roles }
+            })
+        )
 
-        return res.status(200).json({ count: users.length, results: users })
+        return res.status(200).json({ count: results.length, results: results })
     } catch (e) {
         console.log(e)
         return res.status(500).json({ message: e.message })
@@ -63,17 +98,13 @@ router
         */
         try {
             const { _id } = req.params
-            const user = await USER.findOneAndUpdate(
-                { _id },
-                { $set: { ...req.body } },
-                { returnDocument: 'after' }
-            ).select({
-                password: 0,
-            })
-            if (!user) return res.status(404).json({ message: '找不到使用者資料' })
-
-            return res.status(200).json(user)
+            const { currentRole, updateRole } = req.body
+            const accessToken = req.accessToken
+            const roles = await addRolesById(accessToken, _id, updateRole)
+            if (currentRole) await deleteRolesById(accessToken, _id, currentRole)
+            return res.status(200).json(roles)
         } catch (e) {
+            console.log(e)
             return res.status(500).json({ message: e.message })
         }
     })

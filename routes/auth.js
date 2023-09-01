@@ -23,7 +23,6 @@ const verifyToken = async (req, res, next) => {
 
             if (data) {
                 req.token = accessToken
-
                 return next()
             } else {
                 return res.status(403).json({ message: 'Invalid token' })
@@ -45,17 +44,30 @@ const verifyTokenGetUser = (accessToken) => {
     return { userId, username }
 }
 
-const getAccessTokenForRegistration = () => {
-    return axios({
-        method: 'post',
-        url: process.env.KEYCLOAK_AUTH_TOKEN_URL,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        data: {
-            grant_type: 'client_credentials',
-            client_id: process.env.KEYCLOAK_AUTH_CLIENT_ID,
-            client_secret: process.env.KEYCLOAK_AUTH_CLIENT_SECRET,
-        },
-    })
+const getAccessTokenForRegistration = async (req, res, next) => {
+    try {
+        const {
+            data: { access_token },
+        } = await axios({
+            method: 'post',
+            url: process.env.KEYCLOAK_AUTH_TOKEN_URL,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            data: {
+                grant_type: 'client_credentials',
+                client_id: process.env.KEYCLOAK_AUTH_CLIENT_ID,
+                client_secret: process.env.KEYCLOAK_AUTH_CLIENT_SECRET,
+            },
+        })
+
+        if (access_token) {
+            req.accessToken = access_token
+            return next()
+        } else {
+            return res.status(500).json({ message: 'Cant get access token' })
+        }
+    } catch (e) {
+        return res.status(500).json({ message: e.message })
+    }
 }
 
 const registerUser = ({ userData, accessToken }) => {
