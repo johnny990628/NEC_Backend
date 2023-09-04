@@ -15,7 +15,7 @@ const verifyToken = async (req, res, next) => {
 
         if (accessToken) {
             const { data } = await axios({
-                url: process.env.KEYCLOAK_AUTH_VERIFY_URL,
+                url: process.env.KEYCLOAK_AUTH_BASE_URL + process.env.KEYCLOAK_AUTH_VERIFY,
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                 },
@@ -50,7 +50,7 @@ const getAccessTokenForRegistration = async (req, res, next) => {
             data: { access_token },
         } = await axios({
             method: 'post',
-            url: process.env.KEYCLOAK_AUTH_TOKEN_URL,
+            url: process.env.KEYCLOAK_AUTH_BASE_URL + process.env.KEYCLOAK_AUTH_TOKEN,
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             data: {
                 grant_type: 'client_credentials',
@@ -73,7 +73,7 @@ const getAccessTokenForRegistration = async (req, res, next) => {
 const registerUser = ({ userData, accessToken }) => {
     return axios({
         method: 'post',
-        url: process.env.KEYCLOAK_AUTH_REGISTRY_URL,
+        url: process.env.KEYCLOAK_AUTH_BASE_URL + process.env.KEYCLOAK_AUTH_REGISTRY,
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${accessToken}`,

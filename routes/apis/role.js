@@ -5,7 +5,7 @@ const axios = require('axios')
 const getGroups = async (accessToken) => {
     const { data: groups } = await axios({
         method: 'get',
-        url: process.env.KEYCLOAK_AUTH_GROUPS_URL,
+        url: process.env.KEYCLOAK_BASE_URL + process.env.KEYCLOAK_GROUPS,
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
@@ -16,7 +16,7 @@ const getGroups = async (accessToken) => {
 const getGroupRoleList = async (accessToken, groupId) => {
     const { data: roles } = await axios({
         method: 'get',
-        url: `${process.env.KEYCLOAK_AUTH_GROUPS_URL}/${groupId}/role-mappings/realm`,
+        url: `${process.env.KEYCLOAK_BASE_URL}${process.env.KEYCLOAK_GROUPS}/${groupId}/role-mappings/realm`,
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
